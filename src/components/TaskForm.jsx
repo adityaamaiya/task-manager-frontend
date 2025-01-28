@@ -1,23 +1,31 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TextField, Button, Grid, Container } from "@mui/material";
 import { useModal } from "../context/ModalContext";
 import Snackbar from "@mui/material/Snackbar";
+import UploadIcon from "@mui/icons-material/Upload";
+import { API_URL } from "../config";
 
 import axios from "axios";
 
 function TaskForm() {
-  const { taskId, setIsModalOpen ,setTaskId} = useModal();
+  const { taskId, setIsModalOpen, setTaskId } = useModal();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     deadline: "",
+    linkedFile: null, // To hold the uploaded file
   });
 
   const getTaskById = async () => {
     try {
-      const response = await axios.get(`http://localhost:3002/tasks/${taskId}`);
+      const response = await axios.get(`${API_URL}/tasks/${taskId}`);
       const task = response.data;
-      setFormData(task);
+      setFormData({
+        title: task.title,
+        description: task.description,
+        deadline: task.deadline,
+        linkedFile: null, // Reset the file field
+      });
     } catch (error) {
       console.error("Error fetching task by ID:", error);
       setErrorMessage("Error fetching task by ID");
@@ -39,39 +47,78 @@ function TaskForm() {
       [name]: value,
     }));
   };
+  // Handle file input change
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]; // Get the first file
+    setFormData((prevData) => ({
+      ...prevData,
+      linkedFile: file, // Save the file in state
+    }));
+  };
 
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // You can send this data to the server here
-    console.log(taskId);
+    console.log("Task ID:", taskId);
+
     try {
-      if (taskId) {
-        const { _id,__v, ...updateData } = formData;
-        const response = await axios.put(
-          `http://localhost:3002/tasks/${taskId}`,
-          updateData
-        );
-        console.log(response.data);
-      } else {
-        const reponse = await axios.post(
-          "http://localhost:3002/tasks",
-          formData
-        );
-        console.log(reponse.data);
+      // Create a FormData object
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("deadline", formData.deadline);
+
+      if (formData.linkedFile) {
+        formDataToSend.append("linkedFile", formData.linkedFile);
       }
+
+      // Debugging: Log FormData entries to ensure it's populated
+      console.log("FormData Contents:");
+      for (const pair of formDataToSend.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
+      let response;
+      if (taskId) {
+        response = await axios.put(
+          `${API_URL}/tasks/${taskId}`,
+          formDataToSend,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+      } else {
+        response = await axios.post(`${API_URL}/tasks`, formDataToSend, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      }
+
+      console.log("Response:", response.data);
+
+      // Reload the page or handle success
       window.location.reload();
-      // Reset the form after successful submission
+
+      // Reset the form
       setFormData({
         title: "",
         description: "",
         deadline: "",
+        linkedFile: null,
       });
     } catch (error) {
-      console.error("Error in handleSubmit:", error.response.data);
-      setErrorMessage(error.response.data.error);
+      console.error(
+        "Error in handleSubmit:",
+        error.response?.data || error.message
+      );
+      setErrorMessage(
+        error.response?.data?.error || "An unexpected error occurred"
+      );
       setOpen(true);
     }
   };
@@ -135,7 +182,24 @@ function TaskForm() {
               }}
             />
           </Grid>
-          <Grid item xs={12} style={{display:"flex",justifyContent:"space-between"}} >
+          <Grid item xs={12}>
+            <Button variant="contained" component="label">
+              <UploadIcon style={{ marginRight: "8px" }} />
+              Upload File
+              <input
+                type="file"
+                hidden
+                onChange={handleFileChange}
+                accept="application/pdf" // Optional: Restrict to PDFs
+              />
+            </Button>
+          </Grid>
+
+          <Grid
+            item
+            xs={12}
+            style={{ display: "flex", justifyContent: "space-between" }}
+          >
             <Button
               variant="text"
               color="primary"
@@ -143,7 +207,6 @@ function TaskForm() {
                 setTaskId(null);
                 setIsModalOpen(false);
               }}
-              
             >
               Cancel
             </Button>

@@ -3,12 +3,11 @@ import * as React from "react";
 import Button from "@mui/material/Button";
 
 import Modal from "@mui/material/Modal";
-import AddIcon from '@mui/icons-material/Add';
-import { IoIosAdd } from "react-icons/io";
+import AddIcon from "@mui/icons-material/Add";
+
 import Paper from "@mui/material/Paper";
 import TaskForm from "./TaskForm";
 import { useModal } from "../context/ModalContext";
-
 
 export default function TaskModal() {
   const { isModalOpen, setIsModalOpen, setTaskId } = useModal();

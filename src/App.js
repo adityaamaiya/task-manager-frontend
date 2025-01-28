@@ -3,7 +3,8 @@ import "./App.css";
 import Home from "./pages/Home";
 
 function App() {
-  return ( // Add return here
+  return (
+    // Add return here
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
