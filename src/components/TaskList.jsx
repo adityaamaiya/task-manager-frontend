@@ -22,7 +22,7 @@ export default function TaskList({ tasks }) {
   const { setIsModalOpen, setTaskId } = useModal();
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  if (tasks.length === 0) {
+  if (tasks.length === 0 || !tasks) {
     return (
       <h1
         style={{
